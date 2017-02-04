@@ -2,7 +2,7 @@
 
 **두서 없이 개념이 흐릿한 것만 다시 모아서 study**
 
-
+## 2017/1/31
 #### join 
 
 ```python
@@ -212,19 +212,24 @@ saple_list = ['a','b','c','d']
 >>> num
  [1, 1, 1, 2, 8]
 ```
+
+## 2017/2/
+
 ### tuple
 
 
 set
-
 dictionary
 `{Key1:Value1, Key2:Value2, Key3:Value3 ...}`
-
-
-
 lambda
-
-
 decorator
 generator
+Regex
+Crawling
+Sequence Type
+SQL
+class,static method
+attribute access modifier
+get/set
+
 ### algorithm
