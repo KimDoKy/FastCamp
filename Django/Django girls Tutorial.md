@@ -491,6 +491,380 @@ from django.shortcuts import render
 ![](https://tutorial.djangogirls.org/ko/django_templates/images/step3.png)
 
 
+## CSS - 예쁘게 만들기
+
+**부트스트랩(Bootstrap)**은 예쁜 웹사이트를 개발하기 위해 사용되는 가장 유명한 HTML과 CSS 프레임워크입니다: https://getbootstrap.com/
+
+### Bootstrap 설치하기
+
+Bootstrap을 설치하려면, .html 파일의 <head> 안에 이 링크를 넣어야 합니다. (blog/templates/blog/post_list.html):
+
+```html
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+```
+### Django 정적 파일(static files)
+
+blog앱에 정적파일을 추가하면 됩니다.
+blog 앱 안에 static폴더를 만드세요. :
+
+```
+djangogirls
+├── blog
+│   ├── migrations
+│   └── static
+└── mysite
+```
+장고는 app폴더 안에 있는 "static" 폴더를 자동으로 찾아 안에 있는 내용을 불러낼 거에요.
+
+static디렉토리 안에 css라고 새로운 디렉토리를 만드세요. 그리고 css디렉토리 안에 blog.css라는 파일을 만드세요.
+
+```
+djangogirls
+└─── blog
+     └─── static
+          └─── css
+               └─── blog.css
+```
+> CSS 학습 [Codeacademy HTML & CSS course](https://www.codecademy.com/learn/web)
+> 색깔 참조 <http://www.colorpicker.com/>  
+> [w3school](http://www.w3schools.com/colors/colors_names.asp)
+
+post_list.html 추가
+
+```html
+{% load staticfiles %}
+<html>
+    <head>
+        <title>Django Girls blog</title>
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    </head>
+    <body>
+        <div>
+            <h1><a href="/">Django Girls Blog</a></h1>
+        </div>
+
+        {% for post in posts %}
+            <div>
+                <p>published: {{ post.published_date }}</p>
+                <h1><a href="">{{ post.title }}</a></h1>
+                <p>{{ post.text|linebreaksbr }}</p>
+            </div>
+        {% endfor %}
+    </body>
+</html>
+```
+확인
+
+![](https://tutorial.djangogirls.org/ko/css/images/color2.png)
+
+ css 소스 추가
+ 
+ ```css
+ .page-header {
+    background-color: #ff9400;
+    margin-top: 0;
+    padding: 20px 20px 20px 40px;
+}
+
+.page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active {
+    color: #ffffff;
+    font-size: 36pt;
+    text-decoration: none;
+}
+
+.content {
+    margin-left: 40px;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Lobster', cursive;
+}
+
+.date {
+    float: right;
+    color: #828282;
+}
+
+.save {
+    float: right;
+}
+
+.post-form textarea, .post-form input {
+    width: 100%;
+}
+
+.top-menu, .top-menu:hover, .top-menu:visited {
+    color: #ffffff;
+    float: right;
+    font-size: 26pt;
+    margin-right: 20px;
+}
+
+.post {
+    margin-bottom: 70px;
+}
+
+.post h1 a, .post h1 a:visited {
+    color: #000000;
+}
+```
+post_list.html 최종 수정
+
+```html
+<div class="content container">
+    <div class="row">
+        <div class="col-md-8">
+            {% for post in posts %}
+                <div class="post">
+                    <div class="date">
+                        {{ post.published_date }}
+                    </div>
+                    <h1><a href="">{{ post.title }}</a></h1>
+                    <p>{{ post.text|linebreaksbr }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+```
+![](https://tutorial.djangogirls.org/ko/css/images/final.png)
+
+## 템플릿 확장하기(template extending)
+웹사이트 안의 서로 다른 페이지에서 HTML의 일부를 동일하게 재사용
+이 방법을 사용하면 동일한 정보/레이아웃을 사용하고자 할 때, 모든 파일마다 같은 내용을 반복해서 입력 할 필요가 없게 됩니다. 또 뭔가 수정할 부분이 생겼을 때, 각각 모든 파일을 수정할 필요 없이 딱 한번만 수정하면 된답니다!
+### 기본 템플릿 생성하기
+기본 템플릿은 웹사이트 내 모든 페이지에 확장되어 사용되는 가장 기본적인 템플릿입니다.
+blog/templates/blog/에 base.html 파일을 만들어 봅시다:
+
+```
+blog
+└───templates
+    └───blog
+            base.html
+            post_list.html
+```
+post_list.html에 있는 모든 내용을 base.html에 아래 내용을 복사해 붙여넣습니다. 그리고 <body>의 내용을 수정합니다.
+
+```html
+<body>
+    <div class="page-header">
+        <h1><a href="/">Django Girls Blog</a></h1>
+    </div>
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+            {% block content %}
+            {% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+```
+`{% for post in posts %}{% endfor %}` 사이에 있는 모든 내용을 바꿨습니다. :
+
+```
+{% block content %}
+{% endblock %}
+```
+block은 템플릿 태그로 base.html을 확장한 이 블럭에 HTML을 추가할 수 있게 해줍니다. 
+
+blog/templates/blog/post_list.html 파일을 다시 엽니다. body 태그 안에 있는 모든 내용을 지우고, <div class="page-header"></div>도 지웁니다.
+
+```html
+{% for post in posts %}
+    <div class="post">
+        <div class="date">
+            {{ post.published_date }}
+        </div>
+        <h1><a href="">{{ post.title }}</a></h1>
+        <p>{{ post.text|linebreaksbr }}</p>
+    </div>
+{% endfor %}
+```
+파일 맨 윗 줄에 아래 내용을 추가합니다.
+
+```
+{% extends 'blog/base.html' %}
+```
+post_list.html 파일은 이제 base.html 템플릿을 확장했음을 의미합니다. {% block content %}과 {% endblock content %} 사이에 (우리가 방금 추가한 행들을 빼고) 모든 것을 넣습니다. 
+
+최종본
+```
+{% extends 'blog/base.html' %}
+
+{% load staticfiles %}
+<html>
+<head>
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <title>Django Girls blog</title>
+</head>
+<body>
+{% block content %}
+    {% for post in posts %}
+        <div class="post">
+            <div class="date">
+                {{ post.published_date }}
+            </div>
+            <h1><a href="">{{ post.title }}</a></h1>
+            <p>{{ post.text|linebreaksbr }}</p>
+        </div>
+    {% endfor %}
+{% endblock content %}
+</body>
+</html>
+```
+>만약 `TemplateDoesNotExists` 에러가 난다면 `blog/base.html` 파일이 없어 콘솔에서 `runserver`가 작동되고 있는 경우 입니다. 이런 경우, (Ctrl+C)를 눌러서 멈춘 후 python manage.py runserver명령어로 **재시작**해 주세요.
+
+## 프로그램 어플리케이션 확장하기
+### Post에 템플릿 링크 만들기
+blog/templates/blog/post_list.html 파일에 링크를 추가하는 것부터 시작
+
+post 목록에 있는 제목에서 post의 내용 페이지로 가는 링크를 만들 거에요. <h1><a href="">{{ post.title }}</a></h1> 를 변경해 봅시다. post의 상세 페이지는 로 연결됩니다.
+
+```
+<h1><a href="{% url 'post_detail' pk=post.pk %}">{{ post.title }}</a></h1>
+```
+{% url 'post_detail' pk=post.pk %}에 대해 설명
+{% %} 표기는 장고 템플릿 태그를 사용하고 있는 것
+blog.views.post_detail는 우리가 만들려고 하는 경로인 post_detail view 입니다. 
+
+http://127.0.0.1:8000/를 열어보세요. 오류 메세지가 나올 거에요. (예상대로, 아직 post_detail을 위한 view 파일 만들지 않아 오류가 나는 것이죠.)
+![](https://tutorial.djangogirls.org/ko/extend_your_application/images/no_reverse_match2.png)
+
+### Post 상세 페이지에 URL 만들기
+`urls.py` 파일에 `post_detail view` 를 위한 URL를 만들어 봅시다!
+
+첫 번째 게시물의 상세 URL 은 이렇게 나올 거에요.  
+`http://127.0.0.1:8000/post/1/`
+
+`blog/urls.py`파일에 URL을 만들어, 장고가 `post_detail`이란 `view` 로 보내, 전체 블로그 글이 보일 수 있게 만들어 봅시다. `url(r'^post/(?P<pk>[0-9]+)/$', views.post_detail, name='post_detail')` 코드를 `blog/urls.py` 파일에 추가하세요.
+
+```python
+from django.conf.urls import url
+from . import views
+
+urlpatterns = [
+    url(r'^$', views.post_list, name='post_list'),
+    url(r'^post/(?P<pk>[0-9]+)/$', views.post_detail, name='post_detail'),
+]
+```
+```
+^post/(?P<pk>[0-9]+)/$
+```
+
+- `^`은 "시작"을 뜻합니다.
+- 첫 부분 다음부터 나오는 post/는 URL이 post 를 포함해야한다는 것을 뜻합니다.
+- `(?P<pk>[0-9]+)` - 이 부분은 좀 까다롭습니다. 이 정규 표현식의 의미는 장고가 여러분이 여기에 넣은 모든 것을 pk변수에 넣어 뷰로 전송하겠다는 뜻입니다. [0-9]은 문자를 제외하고, 숫자 0부터 9까지 하나의 숫자만 있다는 뜻입니다. +는 하나 또는 그 이상의 숫자가 와야한다는 것을 의미합니다. 따라서 http://127.0.0.1:8000/post//라고 하면 post/ 다음에 숫자가 없기 때문에 해당이 안되지만, http://127.0.0.1:8000/post/1234567890/는 완벽하게 매칭됩니다.
+- `/` - 다음에 / 가 한번 더 와야 한다는 의미입니다.
+- `$` - "마지막"! 입니다. 그 뒤로 더이상 문자가 오면 안됩니다.
+
+브라우저에 `http://127.0.0.1:8000/post/5/`입력하면, 장고는 `post_detail`인 `view` 를 찾고 있다고 생각하고 pk가 5와 일치한 view 로 정보를 보내게 됩니다..
+
+`pk`는 `primary key`의 약자입니다. 장고 프로젝트에서 자주 사용되는 이름이에요. 물론 여러분은 내가 원하는 변수 이름을 사용할 수 있어요. 예를 들어, `(?P<pk>[0-9]+)`의 변수를 `post_id`바꾼다면 하면 정규표현식도 `(?P<post_id>[0-9]+)`으로 바뀌게 됩니다.
+
+다음 단계는 무엇일까요? 그렇죠. : view를 추가해야죠!
+
+### Post 상세 페이지에 뷰 추가하기
+`view` 는 추가적으로 매개변수`pk`를 받아야합니다. view 에 가져다가 써야겠죠? 그래서 함수를 정의할 때, `pk`를 받도록 `def post_detail(request, pk):`라고 정의 할 것입니다. 기입된 `urls(pk)`에 지정한 것과 정확히 똑같은 이름을 사용해야함을 주의하세요. 변수가 생략되면 문제가 생겨 오류가 날 거에요!
+
+쿼리셋(queryset)을 사용해야 합니다.
+
+```
+Post.objects.get(pk=pk)
+```
+하지만 이 코드에는 문제가 있어요. primary key (pk)가있는 Post가 없다면 보고 싶지 않은 오류가 나올 거에요!
+![](https://tutorial.djangogirls.org/ko/extend_your_application/images/does_not_exist2.png)
+
+장고에서는 이를 해결 하기위해 특별한 기능을 제공해요. `get_object_or_404`이에요. 이 기능을 사용하면 pk에 맞는 Post가 없을 경우, 멋진 페이지`(페이지 찾을 수 없음 404 : Page Not Found 404)`를 보여줄 거에요.
+![](https://tutorial.djangogirls.org/ko/extend_your_application/images/404_2.png)
+
+이제 `views.py` 파일에 `view` 를 추가합시다!
+
+```python
+from django.shortcuts import render, get_object_or_404
+```
+from행 근처로 가서, 파일 맨 끝에 view 를 추가하세요. :
+
+```python
+    def post_detail(request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        return render(request, 'blog/post_detail.html', {'post': post})
+```
+브라우저를 새로고침 해보세요. : http://127.0.0.1:8000/
+![](https://tutorial.djangogirls.org/ko/extend_your_application/images/post_list2.png)
+
+잘 되네요! 그런데 블로그 제목 안의 링크를 클릭하면 어떻게 되나요?
+![](https://tutorial.djangogirls.org/ko/extend_your_application/images/template_does_not_exist2.png)
+
+### Post 상세 페이지에 템플릿 만들기
+`blog/templates/blog` 디렉토리 안에 `post_detail.html`라는 새 파일을 생성하세요.
+
+```python
+{% extends 'blog/base.html' %}
+
+{% block content %}
+    <div class="post">
+        {% if post.published_date %}
+            <div class="date">
+                {{ post.published_date }}
+            </div>
+        {% endif %}
+        <h1>{{ post.title }}</h1>
+        <p>{{ post.text|linebreaksbr }}</p>
+    </div>
+{% endblock %}
+```
+
+`base.html`을 확장해 봅시다. `content` 블록에서, 블로그 글의 `published_date` 출판일(존재한다면) 과 제목, 내용을 보이게 할 거에요. 그런데 제일 중요한 것을 얘기해봐야하지 않겠어요?
+
+{% if ... %} ... {% endif %} 는 무엇인가를 확인할 때 사용하는 템플릿 태그 입니다. 
+페이지를 새로고침하면 페이지 찾을 수 없음(Page not found) 페이지가 없어진 것을 알 수 있어요.
+
+![](https://tutorial.djangogirls.org/ko/extend_your_application/images/post_detail2.png)
+
+## Django 폼
+
+폼(양식, forms)으로 강력한 인터페이스를 만들 수 있어요.
+블로그 글을 추가하거나 수정하는 멋진 기능을 추가하는 것이죠. 
+장고 폼이 정말 멋진 것은 아무런 준비 없이도 양식을 만들 수 있고, ModelForm을 생성해 자동으로 모델에 결과물을 저장할 수 있다는 거에요.
+
+blog 디렉토리 안에 파일을 만들 거에요.
+
+```
+blog
+  └── forms.py
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+usr/local/var/pyenv/versions/가상환경/bin/python3
+
+
+
+
 
 -----
 CSS 추가 예정.
@@ -518,3 +892,4 @@ $ 문자열이 끝날 때
 (\d+)는 숫자(한 개 또는 여러개) 가 있다는 뜻입니다. 내가 뽑아내고자 글 번호가 되겠지요.
 /는 장고에게 /뒤에 문자가 있음을 말해 줍니다.
 $는 URL의 끝이 방금 전에 있던 /로 끝나야 매칭될 수 있다는 것을 나타냅니다.
+ 
