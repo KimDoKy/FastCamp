@@ -56,6 +56,7 @@ class Question(models.Model):	# models.py 의 클래스/models.Model클래스를
     def __str__(self):
         return self.q_text
 ```
+
 #### Field options
 각 필드는 각각 특정 인수를 사용합니다.(인스턴스니까!)
 예를 들어 CharField에는 데이터 저장에 사용되는 VARCHAR 데이터베이스 필드의 크기를 지정하는 max_length 인수가 필요합니다.
@@ -254,6 +255,12 @@ class MemberShip(models.Model):
             self.date_joined,
         )
 ```
+중간모델을 직접 설정할 때, 두 모델에 대한 ForeignKey 필드를 선언하고 추가적인 필드를 선언합니다.
+
+제약사항
+- 중간 모델은 원본모델에 대해 **단 하나의 ForeignKey 필드**를 가져야 합니다. 아니면 ManyToManyField.through_fields를 사용하여 관계에 사용해야하는 외래키를 명시적으로 지정해야합니다.
+- 중간 모델을 통해 ManyToMany 관계를 갖는 모델의 경우 동일한 모델에 대한 두 개의 외래 키가 허용됩니다. 두 개 이상의 외래 키가있는 경우 **through_fields**도 지정해야합니다.
+- 중간모델을 사용하여 ManyToMany 관계를 정의할 때는 **symmetrical=False**으로 설정해야 합니다.
 
 ```
 In [1]: from person.models import Idol, Group, MemberShip
@@ -357,19 +364,84 @@ Out[37]: <QuerySet [<Group: 오렌지캬라멜>, <Group: 애프터스쿨>]>
 
 In [38]: afterschool.members.values_list('name')
 Out[38]: <QuerySet [('유이',), ('레이나',), ('나나',), ('리지',), ('이영',), ('가은',)]>
+```
+일반적인 ManyToManyField와 달리 add(), create(), set() 할 수 없습니다.
 
+```
+>>> orangecaramel.members.add(Yoona)
+>>> orangecaramel.members.create(name="Yoona")
+>>> orangecaramel.members.set([레이나, 나나, 리지])
+```
+Idol과 Group의 관계를 설정할 때는 중간모델(MemberShip)의 필드 값들을 명시해주어야 하기 때문입니다. 이러한 경우는 중간모델을 통해 선언해야만 합니다.
+
+```
 In [39]: nana.membership_set.values_list('group__name', 'date_joined')
 Out[39]: <QuerySet [('오렌지캬라멜', datetime.datetime(2010, 6, 17, 0, 0, tzinfo=<UTC>)), ('애프터스쿨', datetime.datetime(2009, , tzinfo=<UTC>))]>
 
 In [40]: MemberShip.objects.all()
 Out[2]: <QuerySet [<MemberShip: 오렌지캬라멜 레이나>, <MemberShip: 오렌지캬라멜 나나>, <MemberShip: 오렌지캬라멜 리지>, <MemberShp: 애프터스쿨 레이나>, <MemberShip: 애프터스쿨 나나>, <MemberShip: 애프터스쿨 리지>, <MemberShip: 애프터스쿨 이영>, <MemberShip: 애프터스쿨 가은>]>
 ```
-중간모델을 직접 설정할 때, 두 모델에 대한 ForeignKey 필드를 선언하고 추가적인 필드를 선언합니다.
+remove() 메서드도 유사한 이유로 사용할 수 없습니다. clear() 메서드는 사용이 가능합니다.
 
-제약사항
-- 중간 모델은 원본모델에 대해 **단 하나의 ForeignKey 필드**를 가져야 합니다. 아니면 ManyToManyField.through_fields를 사용하여 관계에 사용해야하는 외래키를 명시적으로 지정해야합니다.
-- 
+```
+>>> orangrcaramel.members.clear()
+>>> # Note that this deletes the intermediate model instances
+>>> Membership.objects.all()
+```
+관계를 설정할 때는 위와 같이 제약이 걸리지만, 쿼리를 할때는 일반적인 ManyToMany 관계와 동일하게 사용할 수 있습니다.
 
+```
+# '유'로 시작하는 멤버를 가진 그룹을 찾습니다.
+>>> Group.objects.filter(members__name__startswith='유')
+<QuerySet [<Group: 애프터스쿨>]>
+```
+
+```
+# Idol중에 그룹이 '오렌지캬라멜'이고 2009년1월15일에 가입한 멤버를 찾습니다.
+ Idol.objects.filter(
+ ...     group__name='오렌지캬라멜',
+ ...     membership__date_joined__gt=date(2009,1,15))
+ <QuerySet [<Idol: 레이나>, <Idol: 나나>, <Idol: 리지>]>
+```
+그 외에도 중간모델에서 직접 쿼리가 가능하고, Idol 객체로붙 ManyToMany 역참조를 이용할 수도 있습니다.
+
+#### One-to-one relationships
+OneToOne 관계를 정의하려면 OneToOneField를 사용합니다. 다른 필드들과 마찬가지로 모델의 클래스 속성으로 포함하여 사용합니다.
+OneToOne 관계는 다른 모델을 확장하여 새로운 모델을 만들때 사용할 수 있습니다.
+OneToOneField는 관계를 맺는 모델 클래스를 첫번째 인자로 받습니다.
+
+
+// 상속과 다른 점
+상속은 부모클래스 필드 값들과 합쳐서 결과물을 만들어 내고 끝이지만,
+관계는 인스턴스화한 후에도 관계된 클래스(테이블)들의 정보 접근이 가능합니다.
+
+### Models across files
+다른 앱의 모델과 연결할 수 있습니다.
+
+```python
+from django.db import models
+from geography.models import ZipCode
+
+class Restaurant(models.Model):
+    # ...
+    zip_code = models.ForeignKey(
+        ZipCode,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+```
+### Field name restrictions
+모델 필드 이름에 2가지 제약이 있습니다.
+1. 파이썬 예약어
+2. `__` : `__`는 Django에서 특별한 문법으로 사용되기 때문입니다.
+SQL 예약어는 사용이 가능합니다. Django가 쿼리문을 만들때, 모든 컬럼명과 테이블명을 모두 이스케이프 처리하기 때문입니다.
+
+### Custom field types
+Django에서 제공하는 필드타입들 중 내가 사용할 목적에 적합한게 없거나 특정 DB에서만 제공하고 싶으면, 직접 필드를 만들어 사용할 수 있습니다.  
+참조. [Writing custom model fields](https://docs.djangoproject.com/en/1.10/howto/custom-model-fields/)
+
+### Meta options
 
 
 # 질문
