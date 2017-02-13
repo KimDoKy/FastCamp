@@ -344,78 +344,277 @@ ManyToManyField를 통해 쿼리 할 때의 동작을 확인할 수 있습니다
 
 `QuerySet`의 내용 내에서 특정 종류의 사용 가능한 모든 날짜를 나타내는 `datetime.date` 객체의 목록으로 평가되는 `QuerySe`t을 반환합니다.
 
+-
 ##### datetimes()
-##### none()
-##### all()
-##### select_related()
-##### prefetch_related()
-##### extra()
-##### defer()
-##### only()
-##### using()
-##### select_for_update()
-##### raw()
 
+-
+##### none()
+
+-
+##### all()
+
+-
+##### select_related()
+
+-
+##### prefetch_related()
+
+-
+##### extra()
+- select
+- where / tables
+- order_by
+- params
+
+-
+##### defer()
+**`defer(*fields)`**
+
+-
+##### only()
+**`only(*fields)`**
+
+-
+##### using()
+**`using(alias)`**
+
+-
+##### select_for_update()
+**`select_for_update(nowait=False)`**
+
+-
+##### raw()
+**`raw(raw_query, params=None, translations=None)`**
+
+-
 #### Methods that do not return QuerySets
+QuerySet을 평가하고 QuerySet 이외의 것을 반환합니다.  
+이러한 메서드는 캐시를 사용하지 않습니다.  
+호출 될때 마다 데이터베이스를 조회합니다.
+
 ##### get()
+**`get(**kwargs)`**
+지정된 매개변수와 일치하는 객체를 반환합니다.
+parameter는 Field lookup에 설명된 포맷이어야합니다.
+
+`get()`은 하나의 객체만 받습니다. 둘 이상의 객체가 발견되면 `MultipleObjectsReturned` 오류를 발생시킵니다.
+
+지정된 매개 변수에 대해 개체를 찾지 못하는 경우 `DoesNotExist(except)`를 발생시킵니다.
+
+`DoesNotExist`는 `django.core.exceptions.ObjectDoesNotExist`에서 상속되므로 예외 처리를 할 수 있습니다.
+
+```python
+from django.core.exceptions import ObjectDoesNotExist
+try:
+    e = Entry.objects.get(id=3)
+    b = Blog.objects.get(id=1)
+except ObjectDoesNotExist:
+    print("Either the entry or blog doesn't exist.")
+```
+QuerySet이 한 행을 반환 할것으로 예상된다면, get()을 사용하여 해당 행에 대한 객체를 반환할 수 있습니다.
+
+```python
+entry = Entry.objects.filter(...).exclude(...).get()
+```
+
+-
 ##### create()
+**`create(**kwargs)`**
+객체를 작성과 동시에 한번에 저장하는 편리한 메소드입니다.
+
+```python
+p = Person.objects.create(first_name="Bruce", last_name="Springsteen")
+```
+위 코드는 아래의 코드를 한번에 처리합니다.
+
+```
+p = Person(first_name="Bruce", last_name="Springsteen")
+p.save(force_insert=True)
+```
+
+-
 ##### get_or_create()
+**`get_or_create(defaults=None, **kwargs)`**
+객체를 검색하고 만약 존재하지 않으면 해당 객체를 생성합니다.
+객체를 찾거나(object), 새로 생성(created)하면 튜플로 리턴합니다.
+
+-
 ##### update_or_create()
+**`update_or_create(defaults=None, **kwargs)`**
+객체를 업데이트하고 존재하지 않으면 해당 객체를 생성합니다.
+객체를 업데이트(object)하거나, 새로 생성(created)하면 튜플로 리턴합니다.
+
+-
 ##### bulk_create()
+**`bulk_create(objs, batch_size=None)`**
+
+-
 ##### count()
+**`count()`**
+
+-
 ##### in_bulk()
+**`in_bulk(id_list=None)`**
+
+-
 ##### iterator()
+**`iterator()`**
+
+-
 ##### latest()
+**`latest(field_name=None)`**
+
+-
 ##### earliest()
+**`earliest(field_name=None)`**
+
+-
 ##### first()
+**`first()`**
+
+-
 ##### last()
+**`last()`**
+
+-
 ##### aggregate()
+**`aggregate(*args, **kwargs)`**
+QuerySet으로 계산된 집계(평균,총합 등)의 값을 dict로 리턴합니다.
+
+-
 ##### exists()
+**`exists()`**
+
+-
 ##### update()
+**`update(**kwargs)`**
+
+-
 ##### delete()
+**`delete()`**
+
+-
 ##### as_manager()
 
+-
 #### Field lookups
 ##### exact
+
+-
 ##### iexact
+
+-
 ##### contains
+
+-
 ##### icontains
+
+-
 ##### in
+
+-
 ##### gt
+
+-
 ##### gte
+
+-
 ##### lt
+
+-
 ##### lte
+
+-
 ##### startswith
+
+-
 ##### istartswith
+
+-
 ##### endswith
+
+-
 ##### iendswith
+
+-
 ##### range
+
+-
 ##### date
+
+-
 ##### year
+
+-
 ##### month
+
+-
 ##### day
+
+-
 ##### week_day
+
+-
 ##### hour
+
+-
 ##### minute
+
+-
 ##### second
+
+-
 ##### isnull
+
+-
 ##### search
+
+-
 ##### regex
+
+-
 ##### iregex
 
+-
 #### Aggregation functions
 ##### expression
+
+-
 ##### output_field
+
+-
 ##### **extra
+
+-
 ##### Avg
+
+-
 ##### Count
+
+-
 ##### Max
+
+-
 ##### Min
+
+-
 ##### StdDev
+
+-
 ##### Sum
+
+-
 ##### Variance
 
+-
 ### Query-related tools
 #### Q() objects
+**`class Q`**
+
+-
 #### Prefetch() objects
+**`class Prefetch(lookup, queryset=None, to_attr=None)`**
+
+-
 #### prefetch_related_objects()
+**`prefetch_related_objects(model_instances, *related_lookups)`**
