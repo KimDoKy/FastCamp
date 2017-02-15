@@ -6,8 +6,8 @@ Django에 내장 된 템플릿 태그와 필터에 대한 내용입니다.
 > 자동으로 특수 문자들을 변환시켜주는 개념
 > 특수문자들은 HTML문서 에서 `&`,`>`, `<`, `"` , `'` 에 해당합니다.
 > 이 문자들은 텍스트 이외에도 특별한 기능들을 수행합니다. (연산자, 태그 등)
-`auto-escape` 동작을 제어합니다. `on / off` 의 인자를 가지며, `endautoescape 종료 태그로 닫힙니다.
-auto-escape가 실행 중일때 결과를 출력하기 전에 모든 가변 내용에 HTML escape가 적용됩니다.
+`auto-escape` 동작을 제어합니다. `on / off` 의 인자를 가지며, `endautoescape` 종료 태그로 닫힙니다.
+`auto-escape`가 실행 중일때 결과를 출력하기 전에 모든 가변 내용에 HTML escape가 적용됩니다.
 이것은 각 변수들에 수동으로 escape filter를 적용하는 것과 같습니다.
 escape filter가 적용되었거나 escape에서 안전함으로 표시가 되었다면 예외입니다.
 
@@ -606,10 +606,113 @@ ex)
 
 -
 ### now
+주어진 문자열에 따라 혈식을 사용하여 현재의 날짜나 시간을 표시합니다.
+
+```
+It is {% now "jS F Y H:i" %}
+
+# 출력 // It is 15th 2월 2017 23:07
+
+It is the {% now "jS \o\f F" %}
+
+# 출력 // It is the 15th of 2월
+# 시간을 표시하는 형식이기 때문에 백슬래쉬(\)를 사용하여 문자를 삽입할 수 있습니다.
+```
+>**Note**  
+>전달 된 형식은 `DATE_FORMAT`, `DATETIME_FORMAT`, `SHORT_DATE_FORMAT` 또는 `SHORT_DATETIME_FORMAT` 중 하나일 수 있습니다.
+
+또한 `{% now "Y" as current_year %}`을 사용하여 출력을 변수 안에 저장할 수 있습니다. 이것은 `blocktrans`와 같은 템플릿 태그 안에 `{% now %}`를 사용하고자 할 때 유용합니다
+
+```
+{% now "Y" as current_year %}
+{% blocktrans %}Copyright {{ current_year }}{% endblocktrans %}
+```
 
 -
 ### regroup
-#### Grouping on other properties
+공통 속성에 의해 모든 객체의 목록을 재 그룹화합니다.
+
+예를 들어,
+
+```
+cities = [
+    {'name': 'Mumbai', 'population': '19,000,000', 'country': 'India'},
+    {'name': 'Calcutta', 'population': '15,000,000', 'country': 'India'},
+    {'name': 'New York', 'population': '20,000,000', 'country': 'USA'},
+    {'name': 'Chicago', 'population': '7,000,000', 'country': 'USA'},
+    {'name': 'Tokyo', 'population': '33,000,000', 'country': 'Japan'},
+]
+```
+국가별로 정렬된 계층 구조 목록을 표시하려고 합니다.
+
+- India
+ - Mumbai: 19,000,000
+ - Calcutta: 15,000,000
+- USA
+ - New York: 20,000,000
+ - Chicago: 7,000,000
+- Japan
+ - Tokyo: 33,000,000
+
+`{% regroup %}` 태그를 사용하여 국가 별 도시 목록을 그룹화 할 수 있습니다.
+
+```
+{% regroup cities by country as country_list %}
+
+<ul>
+{% for country in country_list %}
+    <li>{{ country.grouper }}
+    <ul>
+        {% for city in country.list %}
+          <li>{{ city.name }}: {{ city.population }}</li>
+        {% endfor %}
+    </ul>
+    </li>
+{% endfor %}
+</ul>
+```
+`{% regroup %}`에는 재구성하려는 목록, 그룹화 할 속성 및 결과 목록의 이름이라는 세 가지 인수가 사용됩니다. 여기에서는 country 속성으로 도시 목록을 다시 그룹화하고 `country_list` 결과를 호출합니다.
+`{% regroup %}`은 그룹 객체의 목록 (이 경우 country_list)을 생성합니다. 각 그룹 객체에는 두 가지 속성이 있습니다.
+
+- grouper : 그룹화 된 항목 (예 : 문자열 "India"또는 "Japan")
+- list : 이 그룹의 모든 항목 목록 (예 : country = 'India'인 모든 도시 목록)
+
+`{% regroup %}`은 입력을 정렬하지 않습니다!
+위의 코드는 아래와 같이 출력할 것입니다.
+
+- India
+ - Mumbai: 19,000,000
+- USA
+ - New York: 20,000,000
+- India
+ - Calcutta: 15,000,000
+ USA
+ - Chicago: 7,000,000
+- Japan
+ - Tokyo: 33,000,000
+
+ 우리가 원하는 출력이 아닙니다. 해결 방법은 테이터를 표시하려는 방식에 따라 데이터가 정렬되도록 view코드를 확인해야합니다.
+ 또 다른 방법은 데이터가 dict 목록에 있는 경우 dictsort 필터를 사용하여 정렬할 수 있습니다.
+ 
+```
+ {% regroup cities|dictsort:"country" by country as country_list %}
+```
+
+-
+#### Grouping on other properties(다른 속성에 그룹화하기)
+regroup 태그를 이용하여 템플릿의 메소드, 속성, dict key, list item 을 조회할 수 있습니다.
+
+예를 들어 'country'필드가 'description'속성이 있는 클래스의 외래키인 경우 다음을 사용 할 수 있습니다.
+
+```
+{% regroup cities by country.description as country_list %}
+```
+또는 country가 선택 항목이 있는 필드인 경우 `get_FOO_display()`메서드를 속성으로 사용할 수 있기 때문에 선택항목키가 아닌 문자열을 그룹화 할 수 있습니다.
+
+```
+{% regroup cities by get_country_display as country_list %}
+```
+`{{country.grouper}}`는 이제 키가 아닌 선택 항목의 값 필드를 표시합니다.
 
 -
 
