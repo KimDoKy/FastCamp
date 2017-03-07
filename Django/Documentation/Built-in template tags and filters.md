@@ -3,12 +3,12 @@ Django에 내장 된 템플릿 태그와 필터에 대한 내용입니다.
 
 ## Built-in tag reference
 ### autoescape
-> 자동으로 특수 문자들을 변환시켜주는 개념
-> 특수문자들은 HTML문서 에서 `&`,`>`, `<`, `"` , `'` 에 해당합니다.
+> 자동으로 특수 문자들을 변환시켜주는 개념  
+> 특수문자들은 HTML문서 에서 `&`,`>`, `<`, `"` , `'` 에 해당합니다.  
 > 이 문자들은 텍스트 이외에도 특별한 기능들을 수행합니다. (연산자, 태그 등)
-`auto-escape` 동작을 제어합니다. `on / off` 의 인자를 가지며, `endautoescape` 종료 태그로 닫힙니다.
+`auto-escape` 동작을 제어합니다. `on / off` 의 인자를 가지며, `endautoescape` 종료 태그로 닫힙니다.  
 `auto-escape`가 실행 중일때 결과를 출력하기 전에 모든 가변 내용에 HTML escape가 적용됩니다.
-이것은 각 변수들에 수동으로 escape filter를 적용하는 것과 같습니다.
+이것은 각 변수들에 수동으로 escape filter를 적용하는 것과 같습니다.  
 escape filter가 적용되었거나 escape에서 안전함으로 표시가 되었다면 예외입니다.
 
 ```
@@ -715,24 +715,141 @@ regroup 태그를 이용하여 템플릿의 메소드, 속성, dict key, list it
 `{{country.grouper}}`는 이제 키가 아닌 선택 항목의 값 필드를 표시합니다.
 
 -
-
 ### spaceless
+HTML 태그 사이의 공백을 제거합니다.
+
+```
+{% spaceless %}
+    <p>
+        <a href="foo/">Foo</a>
+    </p>
+{% endspaceless %}
+
+
+# 위의 코드가 아래의 HTML으로 반환됩니다.
+
+<p><a href="foo/">Foo</a></p>
+```
+**태그 사이의 간격**만 제거됩니다.
 
 -
-
 ### templatetag
+**템플릿 태그를 작성**하는 구문 문자입니다.
+
+Argument | Outputs
+---|---
+openblock | {%
+closeblock | %}
+openvariable | {{
+closevariable | }}
+openbrace | {
+closebrace | }
+opencomment | {#
+closecomment |#}
+
+sample:
+
+```
+{% templatetag openblock %} url 'entry_list' {% templatetag closeblock %}
+```
 
 -
-
 ### url
+주어진 view와 선택전 매개변수와 일치하는 절대경로를 반환합니다.  
+결과 경로의 특수문자는 `iri_to_uri()`(IRI를 UTF-8 바이트로 가져 와서 인코딩 된 결과가 들어있는 ASCII 바이트를 반환합니다.)를 사용하여 인코딩됩니다.  
+이렇게 하면 템플릿의 URL을 하드코딩해야하므로 DRY(Don't Repeat Yourself. 반복하지 말라)원칙을 위반하지 않고 링크를 출력할 수 있습니다.
+
+```
+{% url 'some-url-name' v1 v2 %}
+```
+
+첫 번째 인수는 `url () name`입니다. 따옴표 붙은 리터럴 또는 다른 컨텍스트 변수 일 수 있습니다. 추가 인수는 선택적이며 URL에서 인수로 사용되는 공백으로 구분 된 값이어야합니다. 위의 예제는 위치 인수를 전달하는 것을 보여줍니다. 또는 키워드 구문을 사용할 수도 있습니다.
+
+```
+{% url 'some-url-name' arg1=v1 arg2=v2 %}
+```
+**단일 호출에서 위치와 키워드 구문을 혼합해서 사용하지 마십시오.**  
+URLconf가 요구하는 모든 인수가 있어야 합니다.  
+
+예를 들어 URLconf가 클라이언트 ID를 사용하는 `app_views.client ` view가 있다고 가정합니다. 여기서 `client()`는 뷰 파일 `app_views.py` 내의 메소드입니다. URLconf 행은 다음과 같습니다.
+
+```
+('^client/([0-9]+)/$', app_views.client, name='app-views-client')
+```
+이 App의 URLconf가 다음과 같은 경로 아래 프로젝트 URLconf에 포함되어있는 경우 
+
+```
+('^clients/', include('project_name.app_name.urls'))
+```
+템플릿에서 아래와 같이 링크를 만들 수 있습니다.
+
+```
+{% url 'app-views-client' client.id %}
+```
+템플릿 태그는 `/clients/client/123/`을 출력합니다.
+
+반전중인 URL이 없으면 `NoReverseMatch exception`이 발생합니다.(오류)
+>질문? 반전?? 뭐지??
+
+표시하지 안호 URL을 검색하려면 약간 다른 호출방법을 써야합니다.
+
+```
+{% url 'some-url-name' arg arg2 as the_url %}
+
+<a href="{{ the_url }}">I'm linking to {{ the_url }}</a>
+```
+`as var` 구문에 의해 생성 된 변수의 범위는 `{% url %}` 태그가 나타나는 `{% block %}`입니다.
+`{% url ... as var %}`은 view가 없는 경우 오류를 발생시키지 않습니다. 실제로 이것을 사용하여 선택 사항인 옵션값에 링크 할 수 있습니다.
+
+```
+{% url 'some-url-name' as the_url %}
+{% if the_url %}
+  <a href="{{ the_url }}">Link to optional stuff</a>
+{% endif %}
+```
+네임 스페이스 URL을 검색하려면 다음과 같은 정규화 된 이름을 지정해야합니다.
+
+```
+{% url 'myapp:view-name' %}
+```
+> **주의**  
+> url()이름을 따옴표로 묶는것을 잊으면 안됩니다. 묶지 않는다면 값이 컨텍스트 변수로 해석됩니다!!
 
 -
-
 ### verbatim
+템플릿 엔진이 블록 태그의 내용을 렌더링을 것을 중지합니다.
+
+일반적으로, 장고의 구문과 충돌하는 자바스크립트 템플릿 레이어를 허용할 때 사용합니다.
+
+```
+{% verbatim %}
+    {{if dying}}Still alive.{{/if}}
+{% endverbatim %}
+```
+그리고 `{% endverbatim %}`을 사용하여 템플릿 렌더링을 피할 수 있습니다.
+
+```
+{% verbatim myblock %}
+    Avoid template rendering via the {% verbatim %}{% endverbatim %} block.
+{% endverbatim myblock %}
+```
 
 -
-
 ### widthratio
+대형 차트 등을 만들때 이 태그는 주어진 값과 최대값의 비율을 계산하고 해당 비율을 상수에 적용합니다.
+
+```
+<img src="bar.png" alt="Bar"
+     height="10" width="{% widthratio this_value max_value max_width %}" />
+```
+this_value가 175이고 max_value가 200이고 max_width가 100 인 경우 위의 예에서 이미지는 너비가 88 픽셀 (175/200 = .875; .875 * 100 = 87.5이므로 88로 올림)입니다.
+
+
+
+
+
+
+
 
 -
 
